@@ -19,12 +19,37 @@ def taskListAPI(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
-def taskDetailAPI(request):
+def taskDetailAPI(request, task_id):
+
+    try:
+        querySet = task.objects.get(id=task_id)
+    except task.DoesNotExist:
+        return Response({'message':"Task Doesn't Found"}, status=status.HTTP_404_NOT_FOUND)
+
     if request.method == 'GET':
-        pass
+        serializer = taskSerializer(querySet)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
     if request.method == 'PUT':
-        pass
+        serializer = taskSerializer(querySet, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
     if request.method == 'PATCH':
-        pass
+        serializer = taskSerializer(querySet, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            context = {
+                'data':serializer.data,
+                'message':f"{querySet.title} - Updated successfully."
+            }
+            return Response(context, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
     if request.method == 'DELETE':
-        pass
+        querySet.delete()
+        return Response({'message':f"'{querySet.title}' - deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
